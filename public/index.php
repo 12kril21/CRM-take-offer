@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
 
-require __DIR__ . '/../src/bootstrap.php';
-
 use Slim\Factory\AppFactory;
 use DI\Container;
 use Dotenv\Dotenv;
@@ -12,6 +10,8 @@ require __DIR__ . '/../vendor/autoload.php';
 // Загружаем .env
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
+
+require __DIR__ . '/../src/bootstrap.php';
 
 // Используем PHP-DI для контейнера
 $container = new Container();
