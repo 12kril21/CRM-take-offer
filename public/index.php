@@ -7,9 +7,9 @@ use Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// Загружаем .env
+// Загружаем .env, если он существует. Иначе используем переменные окружения
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
+$dotenv->safeLoad();
 
 require __DIR__ . '/../src/bootstrap.php';
 
