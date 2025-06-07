@@ -25,5 +25,43 @@ class LeadController
         return $res->withStatus(201)->withHeader('Content-Type', 'application/json');
     }
 
-    // show, update, delete — аналогично
+    public function show(Request $req, Response $res, array $args): Response
+    {
+        $lead = Lead::find($args['id']);
+        if (!$lead) {
+            $res->getBody()->write(json_encode(['message' => 'Lead not found']));
+            return $res->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $res->getBody()->write($lead->toJson());
+        return $res->withHeader('Content-Type', 'application/json');
+    }
+
+    public function update(Request $req, Response $res, array $args): Response
+    {
+        $lead = Lead::find($args['id']);
+        if (!$lead) {
+            $res->getBody()->write(json_encode(['message' => 'Lead not found']));
+            return $res->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $data = (array)$req->getParsedBody();
+        $lead->fill($data);
+        $lead->save();
+
+        $res->getBody()->write($lead->toJson());
+        return $res->withHeader('Content-Type', 'application/json');
+    }
+
+    public function delete(Request $req, Response $res, array $args): Response
+    {
+        $lead = Lead::find($args['id']);
+        if (!$lead) {
+            $res->getBody()->write(json_encode(['message' => 'Lead not found']));
+            return $res->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $lead->delete();
+        return $res->withStatus(204);
+    }
 }
