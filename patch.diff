@@ -1,0 +1,149 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000000000000000000000000000000000000..594d8bbfb39e247b181387d964e0676294131acf
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,4 @@
++DB_HOST=db
++DB_DATABASE=mycrm
++DB_USERNAME=user
++DB_PASSWORD=secret
+diff --git a/README.md b/README.md
+index a4606c06f51010110b6ac03430b66d0ffd0f1d1d..cd391887aab74304f5ddbb15410b97880aa8c8e9 100644
+--- a/README.md
++++ b/README.md
+@@ -1,19 +1,30 @@
+ # CRM-take-offer
+ 
+ # MiniCRM – CRM-система для отслеживания лидов и уведомлений
+ 
+ 🚀 **MiniCRM** — это лёгкое CRM-приложение на PHP с использованием фреймворка **Slim 4**, созданное для демонстрации навыков работы с REST API, маршрутизацией, логированием и обработкой лидов.
+ 
+ ---
+ 
+ ## 📦 Стек технологий
+ 
+ - **PHP 8.1**
+ - **Slim 4 Framework**
+ - **MySQL** (или MariaDB)
+ - **Composer** (управление зависимостями)
+ - **Docker** + Docker Compose (контейнеризация)
+ - **Monolog** (логирование)
+ - **Dotenv** (для переменных окружения)
+ 
+ ---
++
++## 🚀 Запуск приложения
++
++1. Скопируйте файл `.env.example` в `.env` и при необходимости измените параметры подключения к базе данных.
++2. Запустите контейнеры командой:
++
++   ```bash
++   docker-compose up -d
++   ```
++
++3. Приложение будет доступно по адресу [http://localhost:8080](http://localhost:8080).
+diff --git a/composer.json b/composer.json
+index 5b971502dc208b78d963f98a81f68667b5463c6c..60af78e013ba152c55e784126574156415467429 100644
+--- a/composer.json
++++ b/composer.json
+@@ -1,20 +1,22 @@
+ {
+     "name": "rivi/mycrm",
+     "description": "Мини-CRM на Slim для отслеживания лидов и уведомлений",
+     "require": {
+       "php": "^8.0",
+       "slim/slim": "^4.10",
+       "slim/psr7": "^1.6",
+       "monolog/monolog": "^2.0",
+-      "vlucas/phpdotenv": "^5.5"
++      "vlucas/phpdotenv": "^5.5",
++      "php-di/php-di": "^6.4",
++      "illuminate/database": "^8.0"
+     },
+     "autoload": {
+       "psr-4": {
+         "App\\": "src/"
+       }
+     },
+     "require-dev": {
+       "phpunit/phpunit": "^9.5"
+     }
+   }
+   
+\ No newline at end of file
+diff --git a/src/Controllers/LeadController.php b/src/Controllers/LeadController.php
+index 83532f2464d5dbbbc6f9959808ebabfb6629e350..f7e4c416b7b343835929ec1d72dec3eb0f0b7092 100644
+--- a/src/Controllers/LeadController.php
++++ b/src/Controllers/LeadController.php
+@@ -3,27 +3,65 @@ declare(strict_types=1);
+ 
+ namespace App\Controllers;
+ 
+ use Psr\Http\Message\ResponseInterface as Response;
+ use Psr\Http\Message\ServerRequestInterface as Request;
+ use App\Models\Lead;
+ 
+ class LeadController
+ {
+     public function index(Request $req, Response $res): Response
+     {
+         $leads = Lead::all();
+         $res->getBody()->write($leads->toJson());
+         return $res->withHeader('Content-Type', 'application/json');
+     }
+ 
+     public function store(Request $req, Response $res): Response
+     {
+         $data = (array)$req->getParsedBody();
+         $lead = Lead::create($data);
+         // тут можно вызвать сервис уведомлений
+         $res->getBody()->write($lead->toJson());
+         return $res->withStatus(201)->withHeader('Content-Type', 'application/json');
+     }
+ 
+-    // show, update, delete — аналогично
++    public function show(Request $req, Response $res, array $args): Response
++    {
++        $lead = Lead::find($args['id']);
++        if (!$lead) {
++            $res->getBody()->write(json_encode(['message' => 'Lead not found']));
++            return $res->withStatus(404)->withHeader('Content-Type', 'application/json');
++        }
++
++        $res->getBody()->write($lead->toJson());
++        return $res->withHeader('Content-Type', 'application/json');
++    }
++
++    public function update(Request $req, Response $res, array $args): Response
++    {
++        $lead = Lead::find($args['id']);
++        if (!$lead) {
++            $res->getBody()->write(json_encode(['message' => 'Lead not found']));
++            return $res->withStatus(404)->withHeader('Content-Type', 'application/json');
++        }
++
++        $data = (array)$req->getParsedBody();
++        $lead->fill($data);
++        $lead->save();
++
++        $res->getBody()->write($lead->toJson());
++        return $res->withHeader('Content-Type', 'application/json');
++    }
++
++    public function delete(Request $req, Response $res, array $args): Response
++    {
++        $lead = Lead::find($args['id']);
++        if (!$lead) {
++            $res->getBody()->write(json_encode(['message' => 'Lead not found']));
++            return $res->withStatus(404)->withHeader('Content-Type', 'application/json');
++        }
++
++        $lead->delete();
++        return $res->withStatus(204);
++    }
+ }
+ 
+EOF
+)
